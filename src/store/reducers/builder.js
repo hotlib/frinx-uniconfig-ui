@@ -4,10 +4,12 @@ import {
   SHOW_CUSTOM_ALERT,
   STORE_WORKFLOW_ID,
   STORE_WORKFLOWS,
+  STORE_DIAGRAM,
   SWITCH_SMART_ROUTING,
   UPDATE_BUILDER_QUERY,
+  UPDATE_DIAGRAM_VERSION,
   UPDATE_FINAL_WORKFLOW,
-  UPDATE_WORKFLOWS
+  UPDATE_WORKFLOWS, MOVE_DIAGRAM_POINTER
 } from "../actions/builder";
 
 const finalWorkflowTemplate = {
@@ -35,6 +37,8 @@ const initialState = {
     variant: "danger",
     msg: ""
   },
+  storedDiagramPtr: -1,
+  storedDiagrams: [],
   finalWorkflow: {
     name: "",
     description: "",
@@ -87,6 +91,25 @@ const reducer = (state = initialState, action) => {
     case SHOW_CUSTOM_ALERT: {
       let { show, variant, msg } = action;
       return { ...state, customAlert: { show, variant, msg } };
+    }
+    case STORE_DIAGRAM: {
+      const { serializedDiagram } = action;
+      return {
+        ...state,
+        storedDiagramPtr: state.storedDiagrams.length,
+        storedDiagrams: [...state.storedDiagrams, serializedDiagram]
+      };
+    }
+    case MOVE_DIAGRAM_POINTER: {
+      const { num } = action;
+      if (num < 0 && state.storedDiagramPtr === -1) {
+        return {...state};
+      } else {
+        return {
+          ...state,
+          storedDiagramPtr: state.storedDiagramPtr + num,
+        };
+      }
     }
     default:
       break;

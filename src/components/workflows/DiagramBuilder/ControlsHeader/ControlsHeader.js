@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Button, ButtonGroup, Nav, Navbar } from "react-bootstrap";
+import {
+  Button,
+  ButtonGroup,
+  ButtonToolbar,
+  Nav,
+  Navbar
+} from "react-bootstrap";
 import "./ControlsHeader.css";
 
 const ControlsHeader = props => {
@@ -79,31 +85,56 @@ const ControlsHeader = props => {
           <Nav.Link onClick={props.showExitModal}>Exit</Nav.Link>
         </Nav>
         <Nav>
-          <ButtonGroup>
-            <Button
-              id="expand"
-              variant="outline-light"
-              onClick={props.expandNodeToWorkflow}
-            >
-              <i className="fas fa-expand" />
-              &nbsp;&nbsp;Expand
-            </Button>
-            <Button variant="outline-light" onClick={props.saveAndExecute}>
-              <i className="fas fa-play-circle" />
-              &nbsp;&nbsp;Execute
-            </Button>
-            <Button
-              variant="outline-light"
-              onClick={props.showGeneralInfoModal}
-            >
-              <i className="fas fa-edit" />
-              &nbsp;&nbsp;Edit general
-            </Button>
-            <Button variant="outline-light" onClick={props.showDefinitionModal}>
-              <i className="fas fa-file-code" />
-              &nbsp;&nbsp;Definition
-            </Button>
-          </ButtonGroup>
+          <ButtonToolbar aria-label="Toolbar with button groups">
+            <ButtonGroup className="mr-4">
+              <Button
+                variant="outline-light"
+                disabled={props.storedDiagramPtr === 0}
+                onClick={() => props.deserializeDiagram(-1)}
+              >
+                <i className="fas fa-undo" />
+              </Button>
+              <Button
+                variant="outline-light"
+                disabled={props.storedDiagramPtr + 1 === props.storedDiagrams.length}
+                onClick={() => props.deserializeDiagram(+1)}
+              >
+                <i className="fas fa-redo" />
+              </Button>
+            </ButtonGroup>
+
+            <ButtonGroup className="mr-4">
+              <Button
+                id="expand"
+                variant="outline-light"
+                onClick={props.expandNodeToWorkflow}
+              >
+                <i className="fas fa-expand" />
+                &nbsp;&nbsp;Expand
+              </Button>
+            </ButtonGroup>
+
+            <ButtonGroup>
+              <Button
+                variant="outline-light"
+                onClick={props.showGeneralInfoModal}
+              >
+                <i className="fas fa-edit" />
+                &nbsp;&nbsp;Edit general
+              </Button>
+              <Button
+                variant="outline-light"
+                onClick={props.showDefinitionModal}
+              >
+                <i className="fas fa-file-code" />
+                &nbsp;&nbsp;Definition
+              </Button>
+              <Button variant="light" onClick={props.saveAndExecute}>
+                <i className="fas fa-play-circle" />
+                &nbsp;&nbsp;Execute
+              </Button>
+            </ButtonGroup>
+          </ButtonToolbar>
         </Nav>
       </Navbar.Collapse>
     </Navbar>

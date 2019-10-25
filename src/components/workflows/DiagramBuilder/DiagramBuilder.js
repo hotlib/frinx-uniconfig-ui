@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import SideMenu from "./Sidemenu/SideMenu";
-import { DiagramWidget } from "storm-react-diagrams";
+import { DiagramModel, DiagramWidget } from "storm-react-diagrams";
 import ControlsHeader from "./ControlsHeader/ControlsHeader";
 import { Application } from "./Application";
 import { CircleStartNodeModel } from "./NodeModels/StartNode/CircleStartNodeModel";
@@ -46,6 +46,7 @@ class DiagramBuilder extends Component {
       showDetailsModal: false,
       showExitModal: false,
       modalInputs: null,
+      autoSaveInterval: null,
       app: new Application()
     };
 
@@ -66,6 +67,8 @@ class DiagramBuilder extends Component {
     this.expandNodeToWorkflow = this.expandNodeToWorkflow.bind(this);
     this.saveWorkflow = this.saveWorkflow.bind(this);
     this.renderSelectedWorkflow = this.renderSelectedWorkflow.bind(this);
+    this.deserializeDiagram = this.deserializeDiagram.bind(this);
+    this.serializeDiagram = this.serializeDiagram.bind(this);
 
     this.submitFile = this.submitFile.bind(this);
     this.saveFile = this.saveFile.bind(this);
@@ -78,6 +81,8 @@ class DiagramBuilder extends Component {
       () => (document.getElementsByClassName("tray")[0].style.width = "370px"),
       500
     );
+    //let autoSaveInterval = setInterval(this.serializeDiagram, 5000);
+    //this.setState({autoSaveInterval});
 
     http.get("/api/conductor/metadata/workflow").then(res => {
       this.props.storeWorkflows(res.result || []);
@@ -109,6 +114,7 @@ class DiagramBuilder extends Component {
 
   componentWillUnmount() {
     this.props.resetToDefaultWorkflow();
+    clearInterval(this.state.autoSaveInterval)
   }
 
   clearCanvas() {
@@ -662,6 +668,32 @@ class DiagramBuilder extends Component {
     link.dispatchEvent(event);
   }
 
+  serializeDiagram() {
+    let serializedDiagram = JSON.stringify(
+      this.state.app
+        .getDiagramEngine()
+        .getDiagramModel()
+        .serializeDiagram()
+    );
+    this.props.storeDiagram(serializedDiagram);
+  }
+
+  deserializeDiagram = diff => {
+    const { storedDiagrams, storedDiagramPtr, moveDiagramPointer } = this.props;
+
+    if (typeof storedDiagrams[storedDiagramPtr + diff] !== "undefined") {
+      const pointedDiagram = storedDiagrams[storedDiagramPtr + diff];
+
+      let model = new DiagramModel();
+      model.deSerializeDiagram(
+        JSON.parse(pointedDiagram),
+        this.state.app.getDiagramEngine()
+      );
+      this.state.app.getDiagramEngine().setDiagramModel(model);
+      moveDiagramPointer(diff);
+    }
+  };
+
   render() {
     let inputsModal = this.state.showInputModal ? (
       <InputModal
@@ -740,7 +772,6 @@ class DiagramBuilder extends Component {
         {exitModal}
 
         <ControlsHeader
-          parseWftoJSON={this.parseDiagramToJSON}
           showDefinitionModal={this.showDefinitionModal}
           showGeneralInfoModal={this.showGeneralInfoModal}
           showExitModal={this.showExitModal}
@@ -751,6 +782,9 @@ class DiagramBuilder extends Component {
           submitFile={this.submitFile}
           saveFile={this.saveFile}
           clearCanvas={this.clearCanvas}
+          deserializeDiagram={this.deserializeDiagram}
+          storedDiagrams={this.props.storedDiagrams}
+          storedDiagramPtr={this.props.storedDiagramPtr}
           app={this.state.app}
         />
 
@@ -798,7 +832,9 @@ const mapStateToProps = state => {
     smartRouting: state.buildReducer.switchSmartRouting,
     customAlert: state.buildReducer.customAlert,
     isWfNameLocked: state.buildReducer.workflowNameLock,
-    workflowId: state.buildReducer.executedWfId
+    workflowId: state.buildReducer.executedWfId,
+    storedDiagramPtr: state.buildReducer.storedDiagramPtr,
+    storedDiagrams: state.buildReducer.storedDiagrams
   };
 };
 
@@ -812,7 +848,10 @@ const mapDispatchToProps = dispatch => {
     updateQuery: query => dispatch(builderActions.requestUpdateByQuery(query)),
     showCustomAlert: (show, variant, msg) =>
       dispatch(builderActions.showCustomAlert(show, variant, msg)),
-    lockWorkflowName: () => dispatch(builderActions.lockWorkflowName())
+    lockWorkflowName: () => dispatch(builderActions.lockWorkflowName()),
+    storeDiagram: serializedDiagram =>
+      dispatch(builderActions.storeDiagram(serializedDiagram)),
+    moveDiagramPointer: num => dispatch(builderActions.moveDiagramPointer(num))
   };
 };
 

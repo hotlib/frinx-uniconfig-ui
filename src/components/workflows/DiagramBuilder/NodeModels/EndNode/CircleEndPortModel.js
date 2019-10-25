@@ -17,13 +17,15 @@ export class CircleEndPortModel extends PortModel {
 
   serialize() {
     return _.merge(super.serialize(), {
-      position: this.position
+      position: this.position,
+      in: this.in
     });
   }
 
   deSerialize(data: any, engine: DiagramEngine) {
     super.deSerialize(data, engine);
     this.position = data.position;
+    this.in = data.in
   }
 
   canLinkToPort(port: PortModel): boolean {
