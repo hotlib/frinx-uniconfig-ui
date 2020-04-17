@@ -1,244 +1,132 @@
-import React, { Component } from "react";
+import React, { useCallback, useContext } from "react";
+import Particles from "react-particles-js";
+import { Redirect, withRouter } from "react-router-dom";
+import { Button, Container, Form, Grid, Icon, Input } from "semantic-ui-react";
+import { AuthContext } from "../../auth/AuthProvider";
+import fire from "../../auth/Fire";
 import "./Login.css";
-import {
-  Button,
-  Carousel,
-  Col,
-  Container,
-  Form,
-  InputGroup,
-  Row
-} from "react-bootstrap";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faLock,
-  faUser,
-  faTimes,
-  faEnvelope
-} from "@fortawesome/free-solid-svg-icons";
 import logoWhite from "./logoWhite.png";
-import * as authActions from "../../store/actions/auth";
-import { connect } from "react-redux";
 
-class Login extends Component {
-  constructor(props) {
-    super(props);
-    library.add(faUser, faLock);
-    this.state = {
-      activeUsername: false,
-      activePassword: false,
-      password: "",
-      email: "",
-      error: ""
-    };
-    this.setEmail = this.setEmail.bind(this);
-    this.setPassword = this.setPassword.bind(this);
+function Login(props) {
+  const { currentUser } = useContext(AuthContext);
+
+  const handleLogin = useCallback(
+    async (event) => {
+      event.preventDefault();
+      const { email, password } = event.target.elements;
+      try {
+        await fire
+          .auth()
+          .signInWithEmailAndPassword(email.value, password.value);
+        props.history.push("/");
+      } catch (error) {
+        console.log(error);
+        alert(error);
+      }
+    },
+    [props.history]
+  );
+
+  if (currentUser) {
+    return <Redirect to="/" />;
   }
 
-  redirectToRegister = e => {
-    e.preventDefault();
-    this.props.switchAuth();
-    this.props.history.push("/registration");
-  };
-
-  login = e => {
-    e.preventDefault();
-    this.props.onAuth(this.state.email, this.state.password, false);
-  };
-
-  setEmail(event) {
-    this.setState({ email: event.target.value });
-  }
-
-  setPassword(event) {
-    this.setState({ password: event.target.value });
-  }
-
-  render() {
-    let { error, loading } = this.props.authReducer;
-    let errorMsg = error ? error.response.body.error.message : null;
-
-    return (
-      <Container>
-        <div className="accessPanel">
-          <Row>
-            <Col className="whiteBg" xs="7">
-              <div className="loginWindow">
-                <h1>Sign in with</h1>
-                <Button
-                  disabled
-                  variant="outline-primary"
-                  className="paddedButton"
+  return (
+    <Container className="accessPanel">
+      <Grid columns="2">
+        <Grid.Column width="9">
+          <div className="loginWindow">
+            <h1>Sign in with</h1>
+            <Button.Group fluid>
+              <Button icon disabled>
+                <Icon name="google" /> Google
+              </Button>
+              <Button.Or />
+              <Button icon disabled>
+                <Icon name="github" /> Github
+              </Button>
+            </Button.Group>
+            <hr
+              className="hr-text"
+              data-content="sign in usign frinx.io account"
+            />
+            <Form onSubmit={handleLogin}>
+              <Form.Field>
+                <Input iconPosition="left" placeholder="Email" name="email">
+                  <Icon name="at" />
+                  <input />
+                </Input>
+              </Form.Field>
+              <Form.Field>
+                <Input
+                  iconPosition="left"
+                  placeholder="Password"
+                  name="password"
+                  type="password"
                 >
-                  <i className="fab fa-google" /> &nbsp;&nbsp;Sign-in with
-                  Google
-                </Button>
-                <Button
-                  disabled
-                  variant="outline-dark"
-                  style={{ marginBottom: "15px" }}
-                  className="paddedButton"
-                >
-                  <i className="fab fa-github" /> &nbsp;&nbsp;Sign-in with
-                  Github
-                </Button>
-                <center>
-                  <hr
-                    className="hr-text"
-                    data-content="or sign in with your account"
-                  />
-                  <Form onSubmit={this.logIn}>
-                    <InputGroup
-                      className={
-                        !this.state.activeUsername
-                          ? "input-user pretty-feild paddedFeild"
-                          : "input-user pretty-feild paddedFeild focusedInput"
-                      }
-                    >
-                      <InputGroup.Prepend>
-                        <InputGroup.Text id="user-addon">
-                          <FontAwesomeIcon icon={faEnvelope} />
-                        </InputGroup.Text>
-                      </InputGroup.Prepend>
-                      <input
-                        onFocus={() => {
-                          this.setState({ activeUsername: true });
-                        }}
-                        onBlur={() => {
-                          this.setState({ activeUsername: false });
-                        }}
-                        type="email"
-                        placeholder="Email"
-                        onChange={this.setEmail}
-                      />
-                    </InputGroup>
-                    <InputGroup
-                      className={
-                        !this.state.activePassword
-                          ? "input-password pretty-feild paddedFeild"
-                          : "input-password pretty-feild paddedFeild focusedInput"
-                      }
-                    >
-                      <InputGroup.Prepend>
-                        <InputGroup.Text id="password-addon">
-                          <FontAwesomeIcon icon={faLock} />
-                        </InputGroup.Text>
-                      </InputGroup.Prepend>
-                      <input
-                        onFocus={() => {
-                          this.setState({ activePassword: true });
-                        }}
-                        onBlur={() => {
-                          this.setState({ activePassword: false });
-                        }}
-                        type="password"
-                        placeholder="Password"
-                        onChange={this.setPassword}
-                      />
-                    </InputGroup>
-                  </Form>
-                </center>
-                <Button
-                  variant="info"
-                  disabled={loading}
-                  onClick={this.login}
-                  style={{ width: "334px", marginTop: "15px" }}
-                  className="gradientBtn"
-                >
-                  {loading ? <i className="fas fa-spinner fa-spin" /> : null}
-                  {loading ? " Authenticating..." : "Sign In"}
-                </Button>
-                <div
-                  style={{ marginTop: "20px" }}
-                  className={error ? "wrongLogin" : "hidden-login"}
-                >
-                  <FontAwesomeIcon icon={faTimes} /> {errorMsg}
-                </div>
-                <br />
-              </div>
-              <br />
-            </Col>
-            <Col className="gradientBg" xs="5">
-              <div className="registerWindow">
-                <h1>Sign up</h1>
-                Don't have an account yet?
-                <br />
-                <Button
-                  style={{ marginTop: "5px" }}
-                  variant="outline-light"
-                  onClick={this.redirectToRegister}
-                >
-                  Register as a new user
-                </Button>
-                <br />
-                <br />
-                <Carousel indicators={false} style={{ minHeight: "300px" }}>
-                  <Carousel.Item>
-                    <i
-                      style={{ marginTop: "25%", color: "black" }}
-                      className="logo fas fa-info-circle fa-9x"
-                    />
-                    <Carousel.Caption>
-                      <h3>
-                        <a
-                          style={{ color: "white" }}
-                          href="https://frinx.io/frinx-odl-distribution-incons"
-                        >
-                          FRINX UNICONFIG™ ODL
-                        </a>
-                      </h3>
-                      <p>
-                        <br />
-                        <i className="fas fa-check" /> Curated and tested.
-                        <br />
-                        <i className="fas fa-check" /> Production Support.
-                        <br />
-                        <i className="fas fa-check" /> FRINX components and
-                        modules.
-                      </p>
-                    </Carousel.Caption>
-                  </Carousel.Item>
-                  <Carousel.Item>
-                    <a href="https://frinx.io">
-                      <img className="logo" alt="Logo" src={logoWhite} />
-                    </a>
-                  </Carousel.Item>
-                  <Carousel.Item>
-                    <a href="https://github.com/FRINXio">
-                      <img
-                        className="logo"
-                        style={{ marginTop: "20%" }}
-                        alt="Logo"
-                        src="https://pngimg.com/uploads/github/github_PNG15.png"
-                      />
-                    </a>
-                  </Carousel.Item>
-                </Carousel>
-              </div>
-            </Col>
-          </Row>
-        </div>
-      </Container>
-    );
-  }
+                  <Icon name="lock" />
+                  <input />
+                </Input>
+              </Form.Field>
+
+              <Button circular primary fluid type="submit" size="large">
+                Sign In
+              </Button>
+            </Form>
+            <div style={{ marginTop: "10px" }}>
+              <p>
+                Don't have an account?{" "}
+                <a href="https://frinx.io/register" target="_blank">
+                  Register here.
+                </a>
+              </p>
+            </div>
+          </div>
+        </Grid.Column>
+        <Grid.Column className="gradientBg" width="7">
+          <div
+            style={{
+              display: "flex",
+              position: "absolute",
+              width: "95%",
+              height: "95%",
+              alignItems: "center",
+              justifyContent: "center",
+              opacity: "0.6",
+            }}
+          >
+            <img style={{ height: "200px" }} src={logoWhite} />
+          </div>
+
+          <Particles
+            style={{
+              width: "100%",
+              height: "100%",
+            }}
+            height="400px"
+            params={{
+              particles: {
+                number: {
+                  value: 10,
+                },
+                size: {
+                  value: 3,
+                },
+              },
+              interactivity: {
+                events: {
+                  onhover: {
+                    enable: true,
+                    mode: "repulse",
+                  },
+                },
+              },
+            }}
+          />
+        </Grid.Column>
+      </Grid>
+    </Container>
+  );
 }
 
-const mapStateToProps = state => {
-  return {
-    authReducer: state.authReducer
-  };
-};
-
-const mapDispatchToProps = dispatch => {
-  return {
-    onAuth: (email, password, isSignup) =>
-      dispatch(authActions.auth(email, password, isSignup)),
-    switchAuth: () => dispatch(authActions.switchAuth())
-  };
-};
-
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(Login);
+export default withRouter(Login);
